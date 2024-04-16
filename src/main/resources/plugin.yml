@@ -1,0 +1,10 @@
+name: McOsu
+version: '${version}'
+main: top.pas.mcosu.McOsu
+api-version: '1.20'
+commands:
+  mcosu:
+    description: McOsu plugin command.
+    usage: /mcosu
+    permission: mcosu.player
+    permission-message: Please content admin to get mcosu.player permission.

@@ -17,34 +17,37 @@ import java.util.*;
 
 public class OsuMap {
     public static final List<String> PART_NAME = List.of(
-            "[General]", "[Editor]", "[MetaData]", "[Difficulty]", "[Events]", "[TimingPoints]", "[Colours]", "[HitObjects]");
+            "[General]", "[Editor]", "[Metadata]", "[Difficulty]", "[Events]", "[TimingPoints]", "[Colours]", "[HitObjects]");
     public final String rawMap;
     /**
      * Key: 原始文件中的部分，如[General]
      * Value: 该部分下的所有项
      */
-    public final Map<String, List<String>> rawData;
+    public final @NotNull Map<String, List<String>> rawData;
     public final String title;
-    public final AudioObject audio;
+    public final @NotNull AudioObject audio;
     public final List<HitObject> hitObjects = new LinkedList<>();
 
     public OsuMap(String stringMap, @NotNull Player player) {
         this.rawMap = stringMap;
+//        McOsu.LOGGER.info("rawMap: %s".formatted(rawMap));
 
         // 常量
         final double HORIZON_SIZE = McOsu.INSTANCE.getConfig().getDouble("osu.screen.horizon-size");
-        final double VERTICAL_SIZE = McOsu.INSTANCE.getConfig().getDouble("osu.screen.vertical-size");;
+        final double VERTICAL_SIZE = McOsu.INSTANCE.getConfig().getDouble("osu.screen.vertical-size");
         final double TICK_SPEED = McOsu.INSTANCE.getConfig().getDouble("osu.hit-object.speed");
         final double HIT_DISTANCE = McOsu.INSTANCE.getConfig().getDouble("osu.hit-object.hit-distance");
         final Location playerPos = player.getLocation();
 
         // 解析原始铺面信息
         this.rawData = getData(rawMap);
+//        McOsu.LOGGER.info("rawData: %s".formatted(rawData));
 
         final Map<String, String> general = getMapData(rawData.get(PART_NAME.get(0)), ": ");
-        this.audio = new AudioObject(Path.of(general.get("AudioFileName")), Integer.getInteger(general.get("AudioLeadIn")));
+//        McOsu.LOGGER.info("audioleadin: %s".formatted(general.get("AudioLeadIn")));
+        this.audio = new AudioObject(Path.of(general.get("AudioFilename")), Integer.parseInt(general.get("AudioLeadIn")));
 
-        final Map<String, String> metaData = getMapData(rawData.get(PART_NAME.get(2)), ": ");
+        final Map<String, String> metaData = getMapData(rawData.get(PART_NAME.get(2)), ":");
         this.title = metaData.containsKey("TitleUnicode") ? metaData.get("TitleUnicode") : metaData.get("Title");
 
         final List<List<String>> hitObjects = getDotData(rawData.get(PART_NAME.get(7)), ",");
@@ -84,26 +87,32 @@ public class OsuMap {
         boolean foundPart = false;
         String currentPart = null;
         List<String> currentPartData = null;
-        for (String line : rawMap.split("\n")) {
+        for (String line : rawMap.lines().toList()) {
+            if (line == null) line = "";
             if (!foundPart && PART_NAME.contains(line)) {  // 找到有效部分，跳过该行转到下一行有效数据
+//                McOsu.LOGGER.info("found part: %s".formatted(line));
                 foundPart = true;
                 currentPart = line;
                 currentPartData = new LinkedList<>();
                 continue;
             }
             if (foundPart && line.isEmpty()) {  // 一段有效部分结束
+//                McOsu.LOGGER.info("found empty: %s".formatted(line));
                 foundPart = false;
                 data.put(currentPart, currentPartData);
             }
             if (foundPart) {  // 正处于有效部分
+//                McOsu.LOGGER.info("found data: %s".formatted(line));
                 currentPartData.add(line);
             }
         }
+        if (foundPart && !data.containsKey(currentPart))  // fix bugs
+            data.put(currentPart, currentPartData);
 
         return data;
     }
 
-    private static @NotNull Map<String, String> getMapData(@NotNull List<String> rawData, String spilt) {
+    private static @NotNull Map<String, String> getMapData(@NotNull List<String> rawData, @NotNull String spilt) {
         Map<String, String> map = new HashMap<>();
         for (String line : rawData) {
             final String[] kv = line.split(spilt);
@@ -112,7 +121,7 @@ public class OsuMap {
         return map;
     }
 
-    private static @NotNull List<List<String>> getDotData(@NotNull List<String> rawData, String spilt) {
+    private static @NotNull List<List<String>> getDotData(@NotNull List<String> rawData, @NotNull String spilt) {
         List<List<String>> list = new ArrayList<>(rawData.size());
         for (String line : rawData) {
             list.add(List.of(line.split(spilt)));
@@ -122,7 +131,7 @@ public class OsuMap {
 
     @Contract("_, _ -> new")
     @NotNull
-    public static OsuMap createMap(Path osuFile, Player player) throws IOException {
+    public static OsuMap createMap(@NotNull Path osuFile, @NotNull Player player) throws IOException {
         if (!Files.exists(osuFile))
             throw new FileNotFoundException("couldn't load osu-map from path '%s'".formatted(osuFile));
 
@@ -132,6 +141,12 @@ public class OsuMap {
     public void tick() {
         for (HitObject object : hitObjects) {
             object.tick();
+        }
+    }
+
+    public void stop() {
+        for (HitObject object : hitObjects) {
+            object.stop();
         }
     }
 }

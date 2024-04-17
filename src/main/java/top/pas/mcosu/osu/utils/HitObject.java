@@ -18,7 +18,7 @@ public class HitObject {
     private final double tickDistance;
 
     @Nullable
-    private Entity entity;
+    private Entity entity = null;
     protected double VIEW_DISTANCE = 32;
 
     public HitObject(Location targetLocation, PlayerDirection motionDirection, double currentDistance, double tickDistance) {
@@ -46,7 +46,9 @@ public class HitObject {
         final World world = targetLocation.getWorld();
         if (world == null) return;
 
-        this.entity = world.spawnEntity(getLocation(world), EntityType.BLOCK_DISPLAY);
+        McOsu.LOGGER.info("Create entity.");
+        this.entity = world.spawnEntity(getLocation(world), EntityType.ARMOR_STAND);
+        this.entity.setGravity(false);
     }
 
     public Location getLocation(@NotNull World world) {
@@ -59,5 +61,12 @@ public class HitObject {
             case NegativeZ -> location = new Location(world, targetLocation.getX(), targetLocation.getY(), targetLocation.getZ() + currentDistance);
         }
         return location;
+    }
+
+    public void stop() {
+        if (entity == null) return;
+
+        entity.remove();
+        entity = null;
     }
 }

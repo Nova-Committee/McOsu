@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 public class CommandManager {
-    public static boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
+    public static boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, String[] args) {
         if (!(sender instanceof Player)) {
             sender.sendMessage("Only player could play osu!");
             return true;
@@ -14,13 +14,14 @@ public class CommandManager {
 
         if (command.getName().equalsIgnoreCase("mcosu")) {
             if (args.length == 0) {
-                // TODO help message
+                HelpCommand.execute(sender);
             } else {
                 switch (args[0]) {
-                    case "help":  // TODO help message
-                    case "play":  // TODO load map
-                    case "start":  // TODO start game
-                    case "stop":  // TODO stop game
+                    // help
+                    default -> HelpCommand.execute(sender);
+                    case "play" -> PlayCommand.execute(sender, args);
+                    case "start" -> StartCommand.execute(sender);
+                    case "stop" -> StopCommand.execute(sender);
                 }
             }
             return true;
